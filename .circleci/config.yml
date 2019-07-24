@@ -6,7 +6,14 @@ jobs:
     steps:
       - checkout
       - run: echo "A first hello"
-      - run: sleep 25
+      - run: mkdir -p my_workspace
+      - run: echo "Trying out workspaces" > my_workspace/echo-output
+      - persist_to_workspace:
+          # Absolute or relative directory from working directory
+          root: my_workspace
+          # Files to persist, relative from root
+          paths:
+            - echo-output
 
   two:
     docker:
@@ -14,11 +21,20 @@ jobs:
     steps:
       - checkout
       - run: echo "A second hello"
-      - run: sleep 15
+      - attach_workspace:
+          at: my_workspace
+      - run: |
+          if [[ $(cat my_workspace/echo-output) == "Trying out workspaces" ]]; then
+            echo "It worked";
+          else
+            echo "Nope!"; exit 1
+          fi
 workflows:
   version: 2
   one_and_two:
     jobs:
       - one
-      - two
+      - two:
+          requires:
+            - one
 
